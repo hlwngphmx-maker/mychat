@@ -1,0 +1,506 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#06c755">
+<title>MyChat</title>
+<style>
+:root{--green:#061cc7;--bg:#f3f5f7;--ink:#18212b;--muted:#718096}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--ink)}
+header{height:60px;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 16px;font-size:21px;font-weight:750}
+button,input{font:inherit}button{border:0;border-radius:12px;padding:11px 14px;background:var(--green);color:white;font-weight:650}
+button.secondary{background:#e8edf0;color:#24313b}button:disabled{opacity:.5}
+main{max-width:720px;margin:auto;padding:14px}.card{background:#fff;border-radius:16px;padding:16px;margin:12px 0;box-shadow:0 2px 12px #1525360c}
+input{width:100%;padding:13px;border:1px solid #dce2e7;border-radius:12px;margin:6px 0 12px;background:#fff}
+.row{display:flex;gap:8px;align-items:center}.row input{flex:1;min-width:0}.tabs{display:flex;gap:8px;margin:12px 0}.tabs button{flex:1}
+.hidden{display:none!important}.muted{color:var(--muted);font-size:13px}.person{display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid #edf0f2}
+.avatar{width:44px;height:44px;border-radius:50%;background:#dff8e9;display:grid;place-items:center;font-weight:800;color:#087b39;flex:none}
+.person .grow{flex:1;min-width:0}.person strong{display:block}.person small{color:var(--muted)}
+#chatPanel{position:fixed;inset:0;background:#e9eff3;z-index:5;display:flex;flex-direction:column;max-width:720px;margin:auto}
+#chatTop{background:var(--green);color:white;padding:12px;display:flex;gap:10px;align-items:center}
+#chatTop button{background:#ffffff2b}#chatMessages{flex:1;overflow:auto;padding:14px}
+.bubble{max-width:82%;width:fit-content;background:#fff;border-radius:16px 16px 16px 4px;padding:10px 12px;margin:8px 0;overflow-wrap:anywhere;box-shadow:0 1px 2px #0001}
+.bubble.mine{margin-left:auto;background:#c9f7d7;border-radius:16px 16px 4px 16px}
+.bubble img{max-width:100%;max-height:260px;border-radius:10px;display:block}.bubble time{display:block;color:#687781;font-size:10px;margin-top:5px}
+#composer{display:flex;gap:7px;padding:10px;background:#fff;align-items:center;padding-bottom:max(10px,env(safe-area-inset-bottom))}
+#composer input{margin:0;flex:1;min-width:0}#composer label{background:#e8edf0;padding:11px;border-radius:12px}
+.notice{padding:10px;border-radius:12px;background:#fff6d8;color:#684f00;font-size:13px;line-height:1.5}
+h3{margin:4px 0 10px}#status{font-size:13px;color:#fff}
+</style>
+</head>
+<body>
+<header><span>💬 MyChat</span><span id="status">ยังไม่เข้าสู่ระบบ</span></header>
+<main>
+<section id="auth" class="card">
+<h3 id="authTitle">เข้าสู่ระบบ MyChat</h3>
+<div id="signupFields" class="hidden">
+<label>ชื่อที่แสดง</label><input id="displayName" maxlength="30" placeholder="เช่น สมชาย">
+<label>ชื่อผู้ใช้ (username) — ใช้ค้นหาเพื่อน</label><input id="username" maxlength="20" placeholder="เช่น somchai123" autocomplete="username">
+</div>
+<label>อีเมล</label><input id="email" type="email" placeholder="you@example.com" autocomplete="email">
+<label>รหัสผ่าน (อย่างน้อย 1 ตัว)</label><input id="password" type="password" placeholder="รหัสผ่าน" autocomplete="current-password">
+<div class="row"><button id="authAction">ເຂົ້າສູ່ລະບົບ</button><button class="secondary" id="toggleAuth">ສັກມັກສາມາສິກ</button></div>
+<p class="muted">ต้องสมัครด้วยอีเมลและรหัสผ่านก่อน จึงจะใช้แชตจากเครื่องอื่นได้</p>
+</section>
+<section id="app" class="hidden">
+<div class="card">
+<div class="row"><div style="flex:1"><strong id="myName">บัญชีของฉัน</strong><div class="muted" id="myUsername"></div></div><button class="secondary" id="logout">ออกจากระบบ</button></div>
+</div>
+<div class="tabs"><button id="tabSearch">ค้นหาเพื่อน</button><button class="secondary" id="tabFriends">เพื่อนของฉัน</button></div>
+<div class="card" id="searchArea">
+<h3>ค้นหาเพื่อนด้วย username</h3>
+<div class="row"><input id="searchInput" placeholder="พิมพ์ username เช่น somchai123"><button id="searchBtn">ค้นหา</button></div>
+<div id="searchResults" class="muted">ค้นหาด้วยชื่อผู้ใช้แบบตรงตัว</div>
+</div>
+<div class="card hidden" id="friendsArea"><h3>เพื่อนของฉัน</h3><div id="friendsList">กำลังโหลด...</div></div>
+<div class="notice">รุ่นทดลอง: ข้อความและรูปภาพส่งผ่านอินเทอร์เน็ตจริง แต่ยังไม่มีโทรเสียง/วิดีโอคอล และยังไม่ใช่ระบบเข้ารหัสแบบ end-to-end</div>
+</section>
+</main>
+<section id="chatPanel" class="hidden">
+<div id="chatTop"><button id="backBtn">กลับ</button><div><strong id="chatName">แชต</strong><div class="muted" style="color:#eaffef" id="chatSub"></div></div></div>
+<div id="chatMessages"></div>
+<div id="composer"><label for="imageInput">📷</label><input id="imageInput" type="file" accept="image/*" class="hidden"><input id="messageInput" placeholder="พิมพ์ข้อความ..."><button id="sendBtn">ส่ง</button></div>
+</section>
+<script type="module">
+/*
+  1) สร้าง Firebase project
+  2) เปิด Authentication > Email/Password
+  3) สร้าง Firestore Database และ Storage
+  4) คัดลอก Firebase web config มาใส่ด้านล่าง
+*/
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDoc, collection, query, where, getDocs, addDoc, onSnapshot, orderBy, serverTimestamp, runTransaction } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-storage.js";
+
+const firebaseConfig = {
+  apiKey: "ใส่_API_KEY",
+  authDomain: "ใส่_PROJECT_ID.firebaseapp.com",
+  projectId: "ใส่_PROJECT_ID",
+  storageBucket: "ใส่_PROJECT_ID.firebasestorage.app",
+  messagingSenderId: "ใส่_MESSAGING_SENDER_ID",
+  appId: "ใส่_APP_ID"
+};
+
+const $ = id => document.getElementById(id);
+let app, auth, db, storage, me, activeChat, stopMessages;
+let signup = false, friendCache = [];
+
+function readyConfig(){
+  return firebaseConfig.apiKey !== "ใส่_API_KEY" &&
+    !firebaseConfig.projectId.includes("ใส่_");
+}
+function showError(e){ alert(e?.message || String(e)); }
+function safeId(a,b){ return [a,b].sort().join("_"); }
+function setStatus(t){ $("status").textContent=t; }
+
+if (readyConfig()) {
+  app=initializeApp(firebaseConfig); auth=getAuth(app); db=getFirestore(app); storage=getStorage(app);
+  onAuthStateChanged(auth, async user=>{
+    me=user;
+    if(user){ $("auth").classList.add("hidden"); $("app").classList.remove("hidden"); await loadMe(); setStatus("ออนไลน์"); loadFriends(); }
+    else { $("auth").classList.remove("hidden"); $("app").classList.add("hidden"); setStatus("ยังไม่เข้าสู่ระบบ"); }
+  });
+} else {
+  $("authTitle").textContent="ตั้งค่า Firebase ก่อนเริ่มใช้งาน";
+  $("authAction").disabled=true; $("toggleAuth").disabled=true;
+  $("auth").insertAdjacentHTML("beforeend",'<p class="notice">ยังไม่ได้ใส่ Firebase config ในไฟล์ index.html ดูคู่มือ README_TH.txt ที่แนบมา แล้วใส่ค่าจาก Firebase Console ก่อนครับ</p>');
+}
+
+$("toggleAuth").onclick=()=>{
+  signup=!signup;
+  $("signupFields").classList.toggle("hidden",!signup);
+  $("authTitle").textContent=signup?"สมัครสมาชิก MyChat":"เข้าสู่ระบบ MyChat";
+  $("authAction").textContent=signup?"สร้างบัญชี":"เข้าสู่ระบบ";
+  $("toggleAuth").textContent=signup?"กลับไปเข้าสู่ระบบ":"สมัครสมาชิก";
+  $("password").autocomplete=signup?"new-password":"current-password";
+};
+$("authAction").onclick=async()=>{
+ try{
+  const email=$("email").value.trim(), password=$("password").value;
+  if(!email || password.length<6) throw Error("กรอกอีเมลและรหัสผ่านอย่างน้อย 6 ตัว");
+  if(!signup){ await signInWithEmailAndPassword(auth,email,password); return; }
+  const displayName=$("displayName").value.trim(), username=$("username").value.trim().toLowerCase();
+  if(!displayName || !/^[a-z0-9_]{3,20}$/.test(username)) throw Error("กรอกชื่อ และ username ภาษาอังกฤษ/ตัวเลข/ขีดล่าง 3-20 ตัว");
+  const cred=await createUserWithEmailAndPassword(auth,email,password);
+  await runTransaction(db,async tx=>{
+    const unameRef=doc(db,"usernames",username), userRef=doc(db,"users",cred.user.uid);
+    const unameSnap=await tx.get(unameRef);
+    if(unameSnap.exists()) throw Error("username นี้มีคนใช้แล้ว");
+    tx.set(unameRef,{uid:cred.user.uid});
+    tx.set(userRef,{uid:cred.user.uid,displayName,username,createdAt:serverTimestamp()});
+  });
+ }catch(e){showError(e);}
+};
+$("logout").onclick=()=>signOut(auth);
+async function loadMe(){
+ const s=await getDoc(doc(db,"users",me.uid));
+ if(s.exists()){ $("myName").textContent=s.data().displayName; $("myUsername").textContent="@"+s.data().username; }
+}
+$("tabSearch").onclick=()=>{$("searchArea").classList.remove("hidden");$("friendsArea").classList.add("hidden");};
+$("tabFriends").onclick=()=>{$("friendsArea").classList.remove("hidden");$("searchArea").classList.add("hidden");loadFriends();};
+$("searchBtn").onclick=async()=>{
+ try{
+  const u=$("searchInput").value.trim().toLowerCase(); if(!u) return;
+  const us=await getDoc(doc(db,"usernames",u));
+  if(!us.exists()){ $("searchResults").textContent="ไม่พบผู้ใช้นี้"; return; }
+  const uid=us.data().uid; if(uid===me.uid){$("searchResults").textContent="นี่คือบัญชีของคุณ";return;}
+  const ps=await getDoc(doc(db,"users",uid)); const p=ps.data();
+  $("searchResults").innerHTML="";
+  const row=document.createElement("div"); row.className="person";
+  row.innerHTML='<div class="avatar">👤</div><div class="grow"><strong></strong><small></small></div>';
+  row.querySelector("strong").textContent=p.displayName; row.querySelector("small").textContent="@"+p.username;
+  const b=document.createElement("button"); b.textContent="เพิ่มเพื่อน";
+  b.onclick=async()=>{try{
+    await setDoc(doc(db,"users",me.uid,"friends",uid),{uid,createdAt:serverTimestamp()});
+    await setDoc(doc(db,"users",uid,"friends",me.uid),{uid:me.uid,createdAt:serverTimestamp()});
+    b.textContent="เพิ่มแล้ว"; b.disabled=true; loadFriends();
+  }catch(e){showError(e);}};
+  row.append(b); $("searchResults").append(row);
+ }catch(e){showError(e);}
+};
+async function loadFriends(){
+ if(!me)return;
+ try{
+  const snap=await getDocs(collection(db,"users",me.uid,"friends")); friendCache=[];
+  for(const f of snap.docs){const p=await getDoc(doc(db,"users",f.id));if(p.exists())friendCache.push(p.data());}
+  $("friendsList").innerHTML="";
+  if(!friendCache.length){$("friendsList").textContent="ยังไม่มีเพื่อน ลองค้นหา username ดูครับ";return;}
+  friendCache.forEach(p=>{
+   const row=document.createElement("div");row.className="person";
+   row.innerHTML='<div class="avatar">👤</div><div class="grow"><strong></strong><small></small></div>';
+   row.querySelector("strong").textContent=p.displayName;row.querySelector("small").textContent="@"+p.username;
+   const b=document.createElement("button");b.textContent="แชต";b.onclick=()=>openChat(p);
+   row.append(b);$("friendsList").append(row);
+  });
+ }catch(e){showError(e);}
+}
+async function openChat(friend){
+ const chatId=safeId(me.uid,friend.uid); activeChat={id:chatId,friend};
+ await setDoc(doc(db,"chats",chatId),{members:[me.uid,friend.uid].sort(),updatedAt:serverTimestamp()},{merge:true});
+ $("chatName").textContent=friend.displayName; $("chatSub").textContent="@"+friend.username;
+ $("chatPanel").classList.remove("hidden"); $("chatMessages").innerHTML="กำลังโหลดข้อความ...";
+ if(stopMessages)stopMessages();
+ const q=query(collection(db,"chats",chatId,"messages"),orderBy("createdAt","asc"));
+ stopMessages=onSnapshot(q,snap=>{
+  $("chatMessages").innerHTML="";
+  snap.forEach(d=>{
+   const m=d.data(), bubble=document.createElement("div");bubble.className="bubble "+(m.senderId===me.uid?"mine":"");
+   if(m.type==="image"){const img=document.createElement("img");img.src=m.imageUrl;img.alt="รูปภาพ";bubble.append(img);}
+   else bubble.append(document.createTextNode(m.text||""));
+   const time=document.createElement("time");time.textContent=m.createdAt?.toDate?.().toLocaleString("th-TH")||"กำลังส่ง";bubble.append(time);
+   $("chatMessages").append(bubble);
+  });
+  $("chatMessages").scrollTop=$("chatMessages").scrollHeight;
+ },showError);
+}
+$("backBtn").onclick=()=>{$("chatPanel").classList.add("hidden");if(stopMessages)stopMessages();activeChat=null;};
+async function sendText(){
+ const text=$("messageInput").value.trim();if(!text||!activeChat)return;
+ $("sendBtn").disabled=true;
+ try{await addDoc(collection(db,"chats",activeChat.id,"messages"),{senderId:me.uid,type:"text",text,createdAt:serverTimestamp()});
+ $("messageInput").value="";
+ }catch(e){showError(e);}finally{$("sendBtn").disabled=false;}
+}
+$("sendBtn").onclick=sendText;
+$("messageInput").addEventListener("keydown",e=>{if(e.key==="Enter")sendText();});
+$("imageInput").onchange=async e=>{
+ const file=e.target.files[0];if(!file||!activeChat)return;
+ if(file.size>5*1024*1024){alert("รูปต้องมีขนาดไม่เกิน 5 MB");e.target.value="";return;}
+ try{
+  const path=`chatImages/${activeChat.id}/${me.uid}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g,"_")}`;
+  const r=ref(storage,path);await uploadBytes(r,file);const url=await getDownloadURL(r);
+  await addDoc(collection(db,"chats",activeChat.id,"messages"),{senderId:me.uid,type:"image",imageUrl:url,createdAt:serverTimestamp()});
+ }catch(err){showError(err);}finally{e.target.value="";}
+};
+</script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MyChat</title>
+
+<style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f2f2f2;
+}
+
+header {
+  background: #06c755;
+  color: white;
+  padding: 18px;
+  font-size: 23px;
+  font-weight: bold;
+}
+
+#search {
+  width: 94%;
+  margin: 12px 3%;
+  padding: 13px;
+  border: none;
+  border-radius: 20px;
+  font-size: 16px;
+}
+
+.contact {
+  display: flex;
+  align-items: center;
+  background: white;
+  padding: 13px;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+}
+
+.avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #d9f5e3;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 25px;
+  margin-right: 13px;
+}
+
+.name {
+  font-size: 17px;
+  font-weight: bold;
+}
+
+.last {
+  color: #888;
+  font-size: 13px;
+  margin-top: 5px;
+}
+
+#chat {
+  display: none;
+  height: calc(100vh - 65px);
+  background: #8cabd0;
+  position: relative;
+}
+
+#chatHeader {
+  background: white;
+  padding: 15px;
+  font-weight: bold;
+  display: flex;
+  gap: 15px;
+}
+
+#messages {
+  height: calc(100% - 125px);
+  overflow-y: auto;
+  padding: 15px;
+}
+
+.msg {
+  padding: 10px 14px;
+  border-radius: 15px;
+  margin: 8px 0;
+  max-width: 75%;
+  width: fit-content;
+  background: white;
+  word-wrap: break-word;
+}
+
+.me {
+  background: #9cff9c;
+  margin-left: auto;
+}
+
+#sendBox {
+  position: absolute;
+  bottom: 0;
+  background: white;
+  width: 100%;
+  display: flex;
+  padding: 10px;
+  gap: 8px;
+}
+
+#messageInput {
+  flex: 1;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  font-size: 16px;
+}
+
+button {
+  border: none;
+  background: #06c755;
+  color: white;
+  padding: 12px 17px;
+  border-radius: 20px;
+  font-size: 15px;
+}
+
+#back {
+  background: #eee;
+  color: black;
+}
+</style>
+</head>
+
+<body>
+
+<header>MyChat</header>
+
+<div id="home">
+  <input id="search" placeholder="🔍 ค้นหาเพื่อน..."
+  oninput="searchFriends()">
+
+  <div id="contacts"></div>
+</div>
+
+<div id="chat">
+  <div id="chatHeader">
+    <button id="back" onclick="goBack()">กลับ</button>
+    <span id="friendName"></span>
+  </div>
+
+  <div id="messages"></div>
+
+  <div id="sendBox">
+    <input id="messageInput" placeholder="พิมพ์ข้อความ...">
+    <button onclick="sendMessage()">ส่ง</button>
+  </div>
+</div>
+
+<script>
+const friends = [
+  {id: 1, name: "สมชาย", icon: "👨"},
+  {id: 2, name: "สมหญิง", icon: "👩"},
+  {id: 3, name: "เพื่อนคนที่ 3", icon: "🧑"},
+  {id: 4, name: "เพื่อนคนที่ 4", icon: "👨‍🦱"},
+  {id: 5, name: "เพื่อนคนที่ 5", icon: "👩‍🦰"},
+  {id: 6, name: "เพื่อนคนที่ 6", icon: "🧑‍🦰"},
+  {id: 7, name: "เพื่อนคนที่ 7", icon: "👨‍🦰"},
+  {id: 8, name: "เพื่อนคนที่ 8", icon: "👩‍🦱"}
+];
+
+let currentFriend = null;
+
+function getMessages() {
+  return JSON.parse(localStorage.getItem("mychat_messages") || "{}");
+}
+
+function saveMessages(data) {
+  localStorage.setItem("mychat_messages", JSON.stringify(data));
+}
+
+function showFriends(list = friends) {
+  const box = document.getElementById("contacts");
+  box.innerHTML = "";
+
+  list.forEach(friend => {
+    const item = document.createElement("div");
+    item.className = "contact";
+
+    const avatar = document.createElement("div");
+    avatar.className = "avatar";
+    avatar.textContent = friend.icon;
+
+    const info = document.createElement("div");
+    const name = document.createElement("div");
+    name.className = "name";
+    name.textContent = friend.name;
+
+    const last = document.createElement("div");
+    last.className = "last";
+    last.textContent = "แตะเพื่อเปิดแชต";
+
+    info.append(name, last);
+    item.append(avatar, info);
+
+    item.onclick = () => openChat(friend);
+    box.appendChild(item);
+  });
+}
+
+function searchFriends() {
+  const word = document.getElementById("search").value.toLowerCase();
+
+  const result = friends.filter(friend =>
+    friend.name.toLowerCase().includes(word)
+  );
+
+  showFriends(result);
+}
+
+function openChat(friend) {
+  currentFriend = friend;
+
+  document.getElementById("home").style.display = "none";
+  document.getElementById("chat").style.display = "block";
+  document.getElementById("friendName").textContent = friend.name;
+
+  showMessages();
+}
+
+function goBack() {
+  document.getElementById("chat").style.display = "none";
+  document.getElementById("home").style.display = "block";
+}
+
+function showMessages() {
+  const box = document.getElementById("messages");
+  box.innerHTML = "";
+
+  const data = getMessages();
+  const list = data[currentFriend.id] || [];
+
+  list.forEach(message => {
+    const item = document.createElement("div");
+    item.className = "msg " + (message.from === "me" ? "me" : "");
+    item.textContent = message.text;
+    box.appendChild(item);
+  });
+
+  box.scrollTop = box.scrollHeight;
+}
+
+function sendMessage() {
+  const input = document.getElementById("messageInput");
+  const text = input.value.trim();
+
+  if (!text || !currentFriend) return;
+
+  const data = getMessages();
+
+  if (!data[currentFriend.id]) {
+    data[currentFriend.id] = [];
+  }
+
+  data[currentFriend.id].push({
+    from: "me",
+    text: text
+  });
+
+  saveMessages(data);
+  input.value = "";
+  showMessages();
+}
+
+document.getElementById("messageInput")
+.addEventListener("keydown", function(event) {
+  if (event.key === "Enter") sendMessage();
+});
+
+showFriends();
+</script>
+
+</body>
+</html>
