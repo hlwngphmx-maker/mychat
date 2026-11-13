@@ -1,4 +1,4 @@
-<!doctype html>
+  <!doctype html>
 <html lang="th">
 <head>
 <meta charset="utf-8">
@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#06c755">
 <title>MyChat</title>
 <style>
-:root{--green:#061cc7;--bg:#f3f5f7;--ink:#18212b;--muted:#718096}
+:root{--green:#06c755;--bg:#f3f5f7;--ink:#18212b;--muted:#718096}
 *{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--ink)}
 header{height:60px;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 16px;font-size:21px;font-weight:750}
 button,input{font:inherit}button{border:0;border-radius:12px;padding:11px 14px;background:var(--green);color:white;font-weight:650}
@@ -39,8 +39,8 @@ h3{margin:4px 0 10px}#status{font-size:13px;color:#fff}
 <label>ชื่อผู้ใช้ (username) — ใช้ค้นหาเพื่อน</label><input id="username" maxlength="20" placeholder="เช่น somchai123" autocomplete="username">
 </div>
 <label>อีเมล</label><input id="email" type="email" placeholder="you@example.com" autocomplete="email">
-<label>รหัสผ่าน (อย่างน้อย 1 ตัว)</label><input id="password" type="password" placeholder="รหัสผ่าน" autocomplete="current-password">
-<div class="row"><button id="authAction">ເຂົ້າສູ່ລະບົບ</button><button class="secondary" id="toggleAuth">ສັກມັກສາມາສິກ</button></div>
+<label>รหัสผ่าน (อย่างน้อย 6 ตัว)</label><input id="password" type="password" placeholder="รหัสผ่าน" autocomplete="current-password">
+<div class="row"><button id="authAction">เข้าสู่ระบบ</button><button class="secondary" id="toggleAuth">สมัครสมาชิก</button></div>
 <p class="muted">ต้องสมัครด้วยอีเมลและรหัสผ่านก่อน จึงจะใช้แชตจากเครื่องอื่นได้</p>
 </section>
 <section id="app" class="hidden">
@@ -74,20 +74,22 @@ import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, on
 import { getFirestore, doc, setDoc, getDoc, collection, query, where, getDocs, addDoc, onSnapshot, orderBy, serverTimestamp, runTransaction } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-storage.js";
 
+const // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "ใส่_API_KEY",
-  authDomain: "ใส่_PROJECT_ID.firebaseapp.com",
-  projectId: "ใส่_PROJECT_ID",
-  storageBucket: "ใส่_PROJECT_ID.firebasestorage.app",
-  messagingSenderId: "ใส่_MESSAGING_SENDER_ID",
-  appId: "ใส่_APP_ID"
-};
+  apiKey: "AIzaSyCcIz0Me98J3MAdA45MY0ZQQ29hR5effqw",
+  authDomain: "mychat-468a4.firebaseapp.com",
+  projectId: "mychat-468a4",
+  storageBucket: "mychat-468a4.firebasestorage.app",
+  messagingSenderId: "739751281421",
+  appId: "1:739751281421:web:63c5efd2952b770f956644",
+  measurementId: "G-XTPBTTDXCM"};
+
 
 const $ = id => document.getElementById(id);
 let app, auth, db, storage, me, activeChat, stopMessages;
 let signup = false, friendCache = [];
 
-function readyConfig(){
+ readyConfig(){
   return firebaseConfig.apiKey !== "ใส่_API_KEY" &&
     !firebaseConfig.projectId.includes("ใส่_");
 }
@@ -95,7 +97,7 @@ function showError(e){ alert(e?.message || String(e)); }
 function safeId(a,b){ return [a,b].sort().join("_"); }
 function setStatus(t){ $("status").textContent=t; }
 
-if (readyConfig()) {
+function(readyConfig()) {
   app=initializeApp(firebaseConfig); auth=getAuth(app); db=getFirestore(app); storage=getStorage(app);
   onAuthStateChanged(auth, async user=>{
     me=user;
@@ -154,7 +156,7 @@ $("searchBtn").onclick=async()=>{
   const b=document.createElement("button"); b.textContent="เพิ่มเพื่อน";
   b.onclick=async()=>{try{
     await setDoc(doc(db,"users",me.uid,"friends",uid),{uid,createdAt:serverTimestamp()});
-    await setDoc(doc(db,"users",uid,"friends",me.uid),{uid:me.uid,createdAt:serverTimestamp()});
+    await (doc(db,setDoc"users",uid,"friends",me.uid),{uid:me.uid,createdAt:serverTimestamp()});
     b.textContent="เพิ่มแล้ว"; b.disabled=true; loadFriends();
   }catch(e){showError(e);}};
   row.append(b); $("searchResults").append(row);
@@ -178,8 +180,7 @@ async function loadFriends(){
 }
 async function openChat(friend){
  const chatId=safeId(me.uid,friend.uid); activeChat={id:chatId,friend};
- await setDoc(doc(db,"chats",chatId),{members:[me.uid,friend.uid].sort(),updatedAt:serverTimestamp()},{merge:true});
- $("chatName").textContent=friend.displayName; $("chatSub").textContent="@"+friend.username;
+ await setDoc(doc(db,"chats",chatId)พแี้ืึีtextContent="@"+friend.username;
  $("chatPanel").classList.remove("hidden"); $("chatMessages").innerHTML="กำลังโหลดข้อความ...";
  if(stopMessages)stopMessages();
  const q=query(collection(db,"chats",chatId,"messages"),orderBy("createdAt","asc"));
@@ -187,7 +188,7 @@ async function openChat(friend){
   $("chatMessages").innerHTML="";
   snap.forEach(d=>{
    const m=d.data(), bubble=document.createElement("div");bubble.className="bubble "+(m.senderId===me.uid?"mine":"");
-   if(m.type==="image"){const img=document.createElement("img");img.src=m.imageUrl;img.alt="รูปภาพ";bubble.append(img);}
+   if(m.type==="image"){const img=่่document.createElement("img");img.src=m.imageUrl;img.alt="รูปภาพ";bubble.append(img);}
    else bubble.append(document.createTextNode(m.text||""));
    const time=document.createElement("time");time.textContent=m.createdAt?.toDate?.().toLocaleString("th-TH")||"กำลังส่ง";bubble.append(time);
    $("chatMessages").append(bubble);
@@ -199,8 +200,8 @@ $("backBtn").onclick=()=>{$("chatPanel").classList.add("hidden");if(stopMessages
 async function sendText(){
  const text=$("messageInput").value.trim();if(!text||!activeChat)return;
  $("sendBtn").disabled=true;
- try{await addDoc(collection(db,"chats",activeChat.id,"messages"),{senderId:me.uid,type:"text",text,createdAt:serverTimestamp()});
- $("messageInput").value="";
+ try{await addDoc(collection(db,"chats",activeChat.id,"messages"),{:me.uid,type:"text",text,createdAt:serverTimestamp()});
+ $("messageInput").value="";senderId
  }catch(e){showError(e);}finally{$("sendBtn").disabled=false;}
 }
 $("sendBtn").onclick=sendText;
@@ -215,292 +216,5 @@ $("imageInput").onchange=async e=>{
  }catch(err){showError(err);}finally{e.target.value="";}
 };
 </script>
-</body>
-</html>
-<!DOCTYPE html>
-<html lang="th">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MyChat</title>
-
-<style>
-* {
-  box-sizing: border-box;
-}
-
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background: #f2f2f2;
-}
-
-header {
-  background: #06c755;
-  color: white;
-  padding: 18px;
-  font-size: 23px;
-  font-weight: bold;
-}
-
-#search {
-  width: 94%;
-  margin: 12px 3%;
-  padding: 13px;
-  border: none;
-  border-radius: 20px;
-  font-size: 16px;
-}
-
-.contact {
-  display: flex;
-  align-items: center;
-  background: white;
-  padding: 13px;
-  border-bottom: 1px solid #eee;
-  cursor: pointer;
-}
-
-.avatar {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: #d9f5e3;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 25px;
-  margin-right: 13px;
-}
-
-.name {
-  font-size: 17px;
-  font-weight: bold;
-}
-
-.last {
-  color: #888;
-  font-size: 13px;
-  margin-top: 5px;
-}
-
-#chat {
-  display: none;
-  height: calc(100vh - 65px);
-  background: #8cabd0;
-  position: relative;
-}
-
-#chatHeader {
-  background: white;
-  padding: 15px;
-  font-weight: bold;
-  display: flex;
-  gap: 15px;
-}
-
-#messages {
-  height: calc(100% - 125px);
-  overflow-y: auto;
-  padding: 15px;
-}
-
-.msg {
-  padding: 10px 14px;
-  border-radius: 15px;
-  margin: 8px 0;
-  max-width: 75%;
-  width: fit-content;
-  background: white;
-  word-wrap: break-word;
-}
-
-.me {
-  background: #9cff9c;
-  margin-left: auto;
-}
-
-#sendBox {
-  position: absolute;
-  bottom: 0;
-  background: white;
-  width: 100%;
-  display: flex;
-  padding: 10px;
-  gap: 8px;
-}
-
-#messageInput {
-  flex: 1;
-  padding: 12px;
-  border: 1px solid #ddd;
-  border-radius: 20px;
-  font-size: 16px;
-}
-
-button {
-  border: none;
-  background: #06c755;
-  color: white;
-  padding: 12px 17px;
-  border-radius: 20px;
-  font-size: 15px;
-}
-
-#back {
-  background: #eee;
-  color: black;
-}
-</style>
-</head>
-
-<body>
-
-<header>MyChat</header>
-
-<div id="home">
-  <input id="search" placeholder="🔍 ค้นหาเพื่อน..."
-  oninput="searchFriends()">
-
-  <div id="contacts"></div>
-</div>
-
-<div id="chat">
-  <div id="chatHeader">
-    <button id="back" onclick="goBack()">กลับ</button>
-    <span id="friendName"></span>
-  </div>
-
-  <div id="messages"></div>
-
-  <div id="sendBox">
-    <input id="messageInput" placeholder="พิมพ์ข้อความ...">
-    <button onclick="sendMessage()">ส่ง</button>
-  </div>
-</div>
-
-<script>
-const friends = [
-  {id: 1, name: "สมชาย", icon: "👨"},
-  {id: 2, name: "สมหญิง", icon: "👩"},
-  {id: 3, name: "เพื่อนคนที่ 3", icon: "🧑"},
-  {id: 4, name: "เพื่อนคนที่ 4", icon: "👨‍🦱"},
-  {id: 5, name: "เพื่อนคนที่ 5", icon: "👩‍🦰"},
-  {id: 6, name: "เพื่อนคนที่ 6", icon: "🧑‍🦰"},
-  {id: 7, name: "เพื่อนคนที่ 7", icon: "👨‍🦰"},
-  {id: 8, name: "เพื่อนคนที่ 8", icon: "👩‍🦱"}
-];
-
-let currentFriend = null;
-
-function getMessages() {
-  return JSON.parse(localStorage.getItem("mychat_messages") || "{}");
-}
-
-function saveMessages(data) {
-  localStorage.setItem("mychat_messages", JSON.stringify(data));
-}
-
-function showFriends(list = friends) {
-  const box = document.getElementById("contacts");
-  box.innerHTML = "";
-
-  list.forEach(friend => {
-    const item = document.createElement("div");
-    item.className = "contact";
-
-    const avatar = document.createElement("div");
-    avatar.className = "avatar";
-    avatar.textContent = friend.icon;
-
-    const info = document.createElement("div");
-    const name = document.createElement("div");
-    name.className = "name";
-    name.textContent = friend.name;
-
-    const last = document.createElement("div");
-    last.className = "last";
-    last.textContent = "แตะเพื่อเปิดแชต";
-
-    info.append(name, last);
-    item.append(avatar, info);
-
-    item.onclick = () => openChat(friend);
-    box.appendChild(item);
-  });
-}
-
-function searchFriends() {
-  const word = document.getElementById("search").value.toLowerCase();
-
-  const result = friends.filter(friend =>
-    friend.name.toLowerCase().includes(word)
-  );
-
-  showFriends(result);
-}
-
-function openChat(friend) {
-  currentFriend = friend;
-
-  document.getElementById("home").style.display = "none";
-  document.getElementById("chat").style.display = "block";
-  document.getElementById("friendName").textContent = friend.name;
-
-  showMessages();
-}
-
-function goBack() {
-  document.getElementById("chat").style.display = "none";
-  document.getElementById("home").style.display = "block";
-}
-
-function showMessages() {
-  const box = document.getElementById("messages");
-  box.innerHTML = "";
-
-  const data = getMessages();
-  const list = data[currentFriend.id] || [];
-
-  list.forEach(message => {
-    const item = document.createElement("div");
-    item.className = "msg " + (message.from === "me" ? "me" : "");
-    item.textContent = message.text;
-    box.appendChild(item);
-  });
-
-  box.scrollTop = box.scrollHeight;
-}
-
-function sendMessage() {
-  const input = document.getElementById("messageInput");
-  const text = input.value.trim();
-
-  if (!text || !currentFriend) return;
-
-  const data = getMessages();
-
-  if (!data[currentFriend.id]) {
-    data[currentFriend.id] = [];
-  }
-
-  data[currentFriend.id].push({
-    from: "me",
-    text: text
-  });
-
-  saveMessages(data);
-  input.value = "";
-  showMessages();
-}
-
-document.getElementById("messageInput")
-.addEventListener("keydown", function(event) {
-  if (event.key === "Enter") sendMessage();
-});
-
-showFriends();
-</script>
-
 </body>
 </html>
